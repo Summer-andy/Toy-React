@@ -1,94 +1,98 @@
+const RENDER_TO_DOM = Symbol('render to dom')
+
 class ElementWrapper {
-  constructor(type) {
-    this.root = document.createElement(type)
-  }
+    constructor(type) {
+      this.root = document.createElement(type)
+    }
 
-  setAttribute(name, value) {
-    this.root.setAttribute(name, value);
-  }
+    setAttribute(name, value) {
+      this.root.setAttribute(name, value)
+    }
 
-  appendChild(vchild) {
-    vchild.mountTo(this.root);
-  }
+    appendChild(component) {
+      const range = document.createRange();
+      range.setStart(this.root, this.root.childNodes.length);
+      range.setEnd(this.root, this.root.childNodes.length);
+      component[RENDER_TO_DOM](range);
+    }
 
-  mountTo(parent) {
-    parent.appendChild(this.root)
-  }
-
-}
-
-
-class TextWrapper {
-  constructor(Context) {
-    this.root = document.createTextNode(Context);
-  }
-
-  mountTo(parent) {
-    parent.appendChild(this.root)
-  }
+    [RENDER_TO_DOM](range) {
+      range.deleteContents();
+      range.insertNode(this.root);
+    }
 
 }
 
+class TextNodeWrapper {
+  constructor(content) {
+    this.root = document.createTextNode(content);
+  }
+
+  [RENDER_TO_DOM](range) {
+    range.deleteContents();
+    range.insertNode(this.root);
+  }
+}
 
 export class Component {
 
-  constructor() {
-    this.children = [];
+  constructor(props) {
+    this.props = Object.create(null);
+    this._root = null;
+    this.children = []
   }
+
 
   setAttribute(name, value) {
-    this[name] = value
+      this.props[name] = value; 
   }
 
-  mountTo(parent) {
-    let vdom = this.render();
-    vdom.mountTo(parent);
+  appendChild(component) {
+    this.children.push(component);
   }
 
-  appendChild(child) {
-    this.children.push(child);
+  [RENDER_TO_DOM](range) {
+    this.render()[RENDER_TO_DOM](range);
   }
 
 }
-
 
 export const ToyReact = {
   createElement(type, attributes, ...children) {
     let element;
-    if (typeof type === "string")
-      element = new ElementWrapper(type)
-    else
+    if(typeof type === 'string') {
+       element = new ElementWrapper(type);
+    } else {
       element = new type;
-
-    for (let name in attributes) {
-      element.setAttribute(name, attributes[name]);
     }
 
-    let insertChildren = children => {
+    for (let name in attributes) {
+      element.setAttribute(name, attributes[name])
+    }
+
+    function insertChildren(children) {
       for (let child of children) {
-        if (typeof child === 'object' && child instanceof Array) {
-          insertChildren(child)
-        }  else {
-          if((!(child instanceof Component))
-          && !(child instanceof ElementWrapper)
-          && !(child instanceof TextWrapper)
-          )
-          child = String(child)
-          if (typeof child === "string")
-          child = new TextWrapper(child);
-          element.appendChild(child);
-          }
+        if(typeof child === 'string') {
+          child = new TextNodeWrapper(child)
+        }
+        if(typeof child === 'object' && child instanceof Array) {
+          insertChildren(child);
+          return;
+        }
+        element.appendChild(child)
       }
     }
 
     insertChildren(children);
-
-
-
+    
     return element;
   },
-  render(vdom, element) {
-    vdom.mountTo(element);
-  }
 
+  render(component, parentElement) {
+    const range = document.createRange();
+    range.setStart(parentElement, 0);
+    range.setEnd(parentElement, parentElement.childNodes.length);
+    range.deleteContents();
+    component[RENDER_TO_DOM](range)
+  }
 }

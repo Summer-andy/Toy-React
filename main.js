@@ -1,25 +1,25 @@
-import { ToyReact, Component } from './ToyReact.js';
+import { ToyReact, Component } from './ToyReact';
 
-class MyComponent extends Component {
+class TestComponent extends Component {
+  constructor() {
+    super();
+    this.state = {
+      a: 1
+    }
+  }
   render() {
-    return <div>
-      <span>23</span>
-      <span>23222</span>
-      {
-        true
-      }
-      {
-        this.children
-      }
-    </div>
+    return <div id="hello">
+      hello world!
+      <span>{
+          this.state.a.toString()
+        }
+        </span>
+        {
+          this.children
+        }
+      </div>
   }
 }
 
-let a = <MyComponent name="aa">
-  <div>
-    123123
-    </div>
-</MyComponent>
-
-
-ToyReact.render(a, document.body);
+ToyReact.render(<TestComponent name="123"><div>i</div>
+  <div>am</div></TestComponent>, document.body)
