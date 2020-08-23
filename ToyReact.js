@@ -82,7 +82,6 @@ export const ToyReact = {
         element.appendChild(child)
       }
     }
-
     insertChildren(children);
     
     return element;
