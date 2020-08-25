@@ -13,10 +13,6 @@ export class Component {
     return this.render().vdom
   }
 
-  get vchildren() {
-    return this.children.map(child => child.vdom)
-  }
-
   setAttribute(name, value) {
       this.props[name] = value; 
   }
@@ -30,16 +26,65 @@ export class Component {
     this.render()[RENDER_TO_DOM](range);
   }
 
+  update() {
 
-  rerender() {
-      this._range.deleteContents();
-      this[RENDER_TO_DOM](this._range) 
+    let isSameNode = (oldNode, newNode) => {
+      if(oldNode.type !== newNode.type) {
+        return false
+      }
+
+      for (const key in newNode.props) {
+        if (oldNode.props[key] !== newNode.props[key]) {
+            return false
+        }
+      }
+
+      if(Object.keys(oldNode.props).length >  Object.keys(newNode.props).length)
+      return false
+
+      if(newNode.type === "#text") {
+        if(newNode.content !== oldNode.content) {
+          return false;
+        }
+      }
+
+
+      return true;
+    }
+
+    let update = (oldNode, newNode) => {
+      debugger;
+      if(!isSameNode(oldNode, newNode)) {
+          newNode[RENDER_TO_DOM](oldNode._range)
+          return;
+      }
+
+      newNode._range = oldNode._range;
+
+      let newChildren = newNode.vchildren;
+      let oldChildren = oldNode.vchildren;
+
+      for (let index = 0; index < newChildren.length; index++) {
+        const newChild = newChildren[index];
+        const oldChild = oldChildren[index];
+        if(index < oldChildren.length) {
+          update(oldChild, newChild);
+        } else {
+          // 
+        }
+      }
+    }
+
+    let vdom = this.vdom;
+    update(this._vdom, vdom);
+    this._vdom = vdom;
+
   }
 
   setState(newState) {
     if(this.state === null && typeof this.state !== 'object') {
       this.state = newState;
-      this.rerender();
+      this.update();
       return;
     }
 
@@ -53,7 +98,7 @@ export class Component {
         }
     }
     merge(this.state, newState);
-    this.rerender();
+    this.update();
   }
 
 }
@@ -64,10 +109,12 @@ class ElementWrapper extends Component {
     }
 
     get vdom() {
+      this.vchildren = this.children.map(item => item.vdom)
       return this;
     }
 
     [RENDER_TO_DOM](range) {
+      this._range = range
       range.deleteContents();
 
       let root = document.createElement(this.type);
@@ -113,6 +160,7 @@ class TextNodeWrapper extends Component {
   }
 
   [RENDER_TO_DOM](range) {
+    this._range = range
     range.deleteContents();
     range.insertNode(this.root);
   }
