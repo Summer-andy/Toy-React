@@ -23,7 +23,8 @@ export class Component {
 
   [RENDER_TO_DOM](range) {
     this._range = range;
-    this.render()[RENDER_TO_DOM](range);
+    this._vdom = this.vdom;
+    this._vdom[RENDER_TO_DOM](range);
   }
 
   update() {
@@ -48,12 +49,10 @@ export class Component {
         }
       }
 
-
       return true;
     }
 
     let update = (oldNode, newNode) => {
-      debugger;
       if(!isSameNode(oldNode, newNode)) {
           newNode[RENDER_TO_DOM](oldNode._range)
           return;
@@ -64,13 +63,24 @@ export class Component {
       let newChildren = newNode.vchildren;
       let oldChildren = oldNode.vchildren;
 
+      if(!newChildren || !newChildren.length){
+        return;
+      }
+
+      let tailRange = oldChildren[oldChildren.length -1]._range;
+
+
       for (let index = 0; index < newChildren.length; index++) {
         const newChild = newChildren[index];
         const oldChild = oldChildren[index];
         if(index < oldChildren.length) {
           update(oldChild, newChild);
         } else {
-          // 
+          let range = document.createRange();
+          range.setStart(tailRange.endContainer,tailRange.endOffset);
+          range.setEnd(tailRange.endContainer,tailRange.endOffset);
+          newChild[RENDER_TO_DOM](range);
+          tailRange = range;
         }
       }
     }
@@ -97,11 +107,24 @@ export class Component {
           }
         }
     }
+
     merge(this.state, newState);
     this.update();
   }
 
 }
+
+function replaceContent(range, node) {
+  range.insertNode(node);
+  range.setStartAfter(node);
+  
+  range.deleteContents();
+
+  range.setStartBefore(node);
+  range.setEndAfter(node);
+
+}
+
 class ElementWrapper extends Component {
     constructor(type) {
       super(type);
@@ -114,9 +137,7 @@ class ElementWrapper extends Component {
     }
 
     [RENDER_TO_DOM](range) {
-      this._range = range
-      range.deleteContents();
-
+      this._range = range;
       let root = document.createElement(this.type);
 
       for (const name in this.props) {
@@ -141,7 +162,8 @@ class ElementWrapper extends Component {
           child[RENDER_TO_DOM](childRange);
       }
 
-      range.insertNode(root);
+      replaceContent(range, root);
+
     }
 
   
@@ -161,8 +183,8 @@ class TextNodeWrapper extends Component {
 
   [RENDER_TO_DOM](range) {
     this._range = range
-    range.deleteContents();
-    range.insertNode(this.root);
+    let root = document.createTextNode(this.content);
+    replaceContent(range, root)
   }
 }
 
