@@ -1,4 +1,4 @@
-import { ToyReact, Component } from './ToyReact.js';
+import { ToyReact, Component } from './ToyReact';
 
 class Square extends Component {
   render() {
@@ -49,7 +49,7 @@ class Game extends Component {
     this.state = {
       history: [
         {
-          squares: Array(9).fill(null)
+          squares: Array(9).fill('')
         }
       ],
       stepNumber: 0,
@@ -123,7 +123,7 @@ class Game extends Component {
   }
 }
 
-
+ToyReact.render(<Game />, document.getElementById("root"));
 
 function calculateWinner(squares) {
   const lines = [
@@ -144,7 +144,3 @@ function calculateWinner(squares) {
   }
   return null;
 }
-
-
-
-ToyReact.render(<Game />, document.body);
